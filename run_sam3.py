@@ -36,6 +36,7 @@ def parse_args():
     parser.add_argument("--conf", type=float, default=0.25, help="Confidence threshold")
     parser.add_argument("--imgsz", type=int, default=640, help="Inference resolution")
     parser.add_argument("--half", action="store_true", help="FP16 inference (MPS/CUDA)")
+    parser.add_argument("--device", type=str, default="", help="Device: '' (auto), '0', 'cuda:0', 'mps', 'cpu'")
     return parser.parse_args()
 
 
@@ -66,6 +67,7 @@ def main():
         imgsz=args.imgsz,
         model=args.model,
         half=args.half,
+        device=args.device,
     )
     predictor = SAM3VideoSemanticPredictor(overrides=overrides)
 
