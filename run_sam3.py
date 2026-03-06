@@ -82,7 +82,7 @@ def main():
     t_start = time.time()
 
     for result in results:
-        annotated = result.plot()
+        annotated = result.plot(labels=False, conf=False)
 
         if writer is None:
             h, w = annotated.shape[:2]
