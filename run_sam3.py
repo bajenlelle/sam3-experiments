@@ -6,9 +6,11 @@ Usage:
 
 Example:
     python run_sam3.py ../data/videos/djurgarden1.mp4 --model sam3.pt
+    python run_sam3.py ../data/videos/djurgarden1.mp4 --model sam3.pt --save-detections
 """
 
 import argparse
+import json
 import os
 import time
 from pathlib import Path
@@ -38,6 +40,7 @@ def parse_args():
     parser.add_argument("--half", action="store_true", help="FP16 inference (MPS/CUDA)")
     parser.add_argument("--device", type=str, default="", help="Device: '' (auto), '0', 'cuda:0', 'mps', 'cpu'")
     parser.add_argument("--output-dir", type=str, default="", help="Output directory for visualizations (overrides SAM3_OUTPUT_DIR env var)")
+    parser.add_argument("--save-detections", action="store_true", help="Save per-frame raw detections to output/detections/<stem>_sam3.json")
     return parser.parse_args()
 
 
@@ -55,10 +58,24 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"{video_path.stem}_sam3.mp4"
 
+    output_root = out_dir.parent if out_dir.name == "visualizations" else out_dir
+    dets_dir = output_root / "detections"
+    if args.save_detections:
+        dets_dir.mkdir(parents=True, exist_ok=True)
+    dets_path = dets_dir / f"{video_path.stem}_sam3.json"
+
+    # Read video metadata for detection JSON meta block
+    _cap = cv2.VideoCapture(str(video_path))
+    _fps = _cap.get(cv2.CAP_PROP_FPS) or 30.0
+    _total_frames = int(_cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    _cap.release()
+
     print(f"Input:  {video_path}")
     print(f"Model:  {args.model}")
     print(f"Prompts: {args.text}")
     print(f"Output: {out_path}")
+    if args.save_detections:
+        print(f"Detections: {dets_path}")
     print()
 
     overrides = dict(
@@ -81,6 +98,7 @@ def main():
     writer = None
     frame_idx = 0
     t_start = time.time()
+    frames_data = {}
 
     for result in results:
         annotated = result.plot(labels=False, conf=False)
@@ -91,6 +109,20 @@ def main():
             writer = cv2.VideoWriter(str(out_path), fourcc, 30.0, (w, h))
 
         writer.write(annotated)
+
+        if args.save_detections:
+            frame_records = []
+            if result.boxes is not None and len(result.boxes) > 0:
+                boxes = result.boxes
+                for i in range(len(boxes)):
+                    class_id = int(boxes.cls[i])
+                    frame_records.append({
+                        "bbox": [round(v, 2) for v in boxes.xyxy[i].tolist()],
+                        "conf": round(float(boxes.conf[i]), 4),
+                        "class_id": class_id,
+                        "class_name": args.text[class_id] if class_id < len(args.text) else str(class_id),
+                    })
+            frames_data[str(frame_idx)] = frame_records
 
         frame_idx += 1
         if frame_idx % 25 == 0:
@@ -106,6 +138,22 @@ def main():
         print(f"\nDone — {frame_idx} frames written to {out_path}")
     else:
         print("No frames processed.")
+
+    if args.save_detections:
+        det_output = {
+            "meta": {
+                "model": args.model,
+                "source": "sam3",
+                "imgsz": args.imgsz,
+                "fps": _fps,
+                "total_frames": frame_idx,
+                "classes": args.text,
+            },
+            "frames": frames_data,
+        }
+        with open(dets_path, "w") as f:
+            json.dump(det_output, f)
+        print(f"Detections written to {dets_path}")
 
 
 if __name__ == "__main__":
