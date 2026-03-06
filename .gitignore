@@ -1,0 +1,24 @@
+# Output & data
+output/
+data/
+
+# Model checkpoints
+*.pt
+*.pth
+*.onnx
+*.engine
+
+# Virtual environment (symlink, but ignore if resolved)
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# Colab / Jupyter
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
