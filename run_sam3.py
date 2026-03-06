@@ -37,6 +37,7 @@ def parse_args():
     parser.add_argument("--imgsz", type=int, default=640, help="Inference resolution")
     parser.add_argument("--half", action="store_true", help="FP16 inference (MPS/CUDA)")
     parser.add_argument("--device", type=str, default="", help="Device: '' (auto), '0', 'cuda:0', 'mps', 'cpu'")
+    parser.add_argument("--output-dir", type=str, default="", help="Output directory for visualizations (overrides SAM3_OUTPUT_DIR env var)")
     return parser.parse_args()
 
 
@@ -50,7 +51,7 @@ def main():
         raise FileNotFoundError(f"Video not found: {video_path}")
 
     _default_out = Path(__file__).parent / "output" / "visualizations"
-    out_dir = Path(os.environ.get("SAM3_OUTPUT_DIR", _default_out))
+    out_dir = Path(args.output_dir) if args.output_dir else Path(os.environ.get("SAM3_OUTPUT_DIR", _default_out))
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"{video_path.stem}_sam3.mp4"
 
