@@ -1,6 +1,7 @@
 # Output & data
 output/
 data/
+runs/
 
 # Model checkpoints
 *.pt
