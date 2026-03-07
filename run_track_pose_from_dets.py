@@ -61,7 +61,7 @@ def main():
     args = parse_args()
 
     from ultralytics import YOLO
-    from boxmot import BoTSORT, BYTETracker
+    from boxmot import BotSort, ByteTracker
 
     dets_json_path = Path(args.detections_json)
     video_path = Path(args.video_path)
@@ -99,9 +99,9 @@ def main():
 
     # Init tracker
     if args.tracker == "botsort":
-        tracker = BoTSORT(reid_weights=Path("osnet_x0_25_msmt17.pt"), device=args.device or "cpu", half=args.half)
+        tracker = BotSort(reid_weights=Path("osnet_x0_25_msmt17.pt"), device=args.device or "cpu", half=args.half)
     else:
-        tracker = BYTETracker()
+        tracker = ByteTracker()
 
     # Init pose model
     pose_model = YOLO(args.pose_model)
